@@ -58,5 +58,28 @@ const signup = (req, res, next) => {
         })
     }
 
-    
+    const salt = bcrypt.genSaltSync()
+    const passwordHash = bcrypt.hashSync(password, salt)
+    if(!bcrypt.compareSync(confirmPassword, passwordHash)){
+        return res.status(400).send({errors: ['Senhas não conferem.']})
+    }
+
+    User.findOne({email}, (err, user) =>{
+        if(err){
+            return sendErrosFromDb(res, err)
+        } else if (user) {
+            return res.status(400).send({errors: ['Usuário já cadastrado.']})
+        } else {
+            const newUser = new User({name, email, password: passwordHash})
+            newUser.save(err => {
+                if (err) {
+                    return sendErrosFromDb(res, err)
+                } else {
+                    login(req, res, next)
+                }
+            })
+        }
+    })
 }
+
+module.exports = {login, signup, validateToken}
